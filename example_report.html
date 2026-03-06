@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octopus Energy Battery Analysis — Example Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --oct-pink: #e84c8c;
+    --oct-dark: #1c1c1c;
+    --oct-light: #f8f8f8;
+    --oct-green: #00cc66;
+    --oct-amber: #ffaa00;
+    --oct-blue: #0099ff;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: var(--oct-light); color: var(--oct-dark); line-height: 1.6; }
+  .header { background: linear-gradient(135deg, var(--oct-pink) 0%, #c0186e 100%);
+             color: white; padding: 40px 40px 30px; }
+  .header h1 { font-size: 2rem; margin-bottom: 6px; }
+  .header p { opacity: 0.85; font-size: 0.95rem; }
+  .example-banner { background: #ffaa00; color: #1c1c1c; text-align: center;
+                     padding: 10px 20px; font-weight: 600; font-size: 0.9rem; }
+  .meta { display: flex; gap: 30px; margin-top: 18px; flex-wrap: wrap; }
+  .meta-item { background: rgba(255,255,255,0.15); border-radius: 8px;
+                padding: 8px 16px; font-size: 0.85rem; }
+  .meta-item strong { display: block; font-size: 1.1rem; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { background: white; border-radius: 12px; padding: 24px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 1.1rem; color: var(--oct-pink); margin-bottom: 16px;
+              border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
+  .stat { text-align: center; padding: 16px 10px; background: var(--oct-light); border-radius: 10px; }
+  .stat .value { font-size: 1.8rem; font-weight: 700; color: var(--oct-pink); }
+  .stat .label { font-size: 0.78rem; color: #666; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { background: var(--oct-pink); color: white; padding: 10px 12px; text-align: left; }
+  td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  tr.highlight { background: #fff8f0; }
+  tr.highlight td { font-weight: 500; }
+  .chart-container { position: relative; height: 280px; }
+  .rec-good { background: #e8faf0; border-left: 4px solid var(--oct-green);
+               padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+  .rec-ok { background: #fff9e8; border-left: 4px solid var(--oct-amber);
+             padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+  .rec-bad { background: #feeee8; border-left: 4px solid #e84c4c;
+              padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
+            font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: #e8faf0; color: #009944; }
+  .badge-amber { background: #fff9e8; color: #996600; }
+  .badge-red { background: #feeee8; color: #cc2200; }
+  .section-title { font-size: 1.35rem; font-weight: 700; margin: 28px 0 14px; color: var(--oct-dark); }
+  .footnote { color: #888; font-size: 0.8rem; margin-top: 30px; line-height: 1.5; }
+  .tip { background: #eef6ff; border-radius: 10px; padding: 16px 20px; margin: 12px 0; font-size: 0.9rem; }
+  .tip strong { color: var(--oct-blue); }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="example-banner">
+  ⚠ This is an example report with synthetic data. Run <code>python3 octopus_battery_analysis.py</code> to generate a real report from your account.
+</div>
+
+<div class="header">
+  <h1>⚡ Battery Storage Analysis</h1>
+  <p>Personalised recommendation based on your Agile Octopus usage data</p>
+  <div class="meta">
+    <div class="meta-item"><strong>A-EXAMPLE</strong>Account</div>
+    <div class="meta-item"><strong>Agile Octopus</strong>Tariff</div>
+    <div class="meta-item"><strong>365 days</strong>Data period</div>
+    <div class="meta-item"><strong>£1,240/yr</strong>Est. annual bill</div>
+    <div class="meta-item"><strong>Example Report</strong>Synthetic data</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- USAGE SUMMARY -->
+  <p class="section-title">📊 Your Usage Summary</p>
+  <div class="card">
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="value">3,800</div>
+        <div class="label">Total kWh consumed</div>
+      </div>
+      <div class="stat">
+        <div class="value">10.4</div>
+        <div class="label">Daily avg kWh</div>
+      </div>
+      <div class="stat">
+        <div class="value">£1,240</div>
+        <div class="label">Total cost (data period)</div>
+      </div>
+      <div class="stat">
+        <div class="value">19.2p</div>
+        <div class="label">Avg rate (p/kWh)</div>
+      </div>
+      <div class="stat">
+        <div class="value">62.0p</div>
+        <div class="label">Peak rate (p/kWh)</div>
+      </div>
+      <div class="stat">
+        <div class="value" style="color:#00cc66">118</div>
+        <div class="label">Hours at negative rates</div>
+      </div>
+      <div class="stat" style="background:#e8faf0;border:2px solid #00cc66">
+        <div class="value" style="color:#00aa44">£1.94</div>
+        <div class="label">Earned at negative rates</div>
+      </div>
+      <div class="stat">
+        <div class="value" style="color:#00cc66">-9.1p</div>
+        <div class="label">Lowest rate seen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="grid-2" style="margin-top:20px">
+    <div class="card">
+      <h2>Monthly Consumption (kWh)</h2>
+      <div class="chart-container">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Monthly Cost (£)</h2>
+      <div class="chart-container">
+        <canvas id="monthlyCostChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- RATE DISTRIBUTION -->
+  <div style="margin-top:20px" class="card">
+    <h2>⚡ Agile Rate Distribution — Usage by Rate Band</h2>
+    <div class="chart-container" style="height:220px">
+      <canvas id="rateDistChart"></canvas>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:20px; font-size:0.85rem; flex-wrap:wrap">
+      <span>⚡ <strong style="color:#00cc66">82 kWh</strong> consumed at &lt;0p</span>
+      <span>🟢 <strong>540 kWh</strong> consumed at 0–10p (cheap)</span>
+      <span>🟡 <strong>2,180 kWh</strong> consumed at 10–20p (medium)</span>
+      <span>🔴 <strong>998 kWh</strong> consumed at &gt;20p (expensive)</span>
+    </div>
+  </div>
+
+  <!-- BATTERY RECOMMENDATION -->
+  <p class="section-title">🔋 Battery Recommendation</p>
+  <p class="rec-ok">⚠ <strong>Marginal investment</strong> — savings partially offset costs; consider solar pairing to improve ROI.</p>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Battery Comparison — Annual Savings &amp; Cost of Ownership (15 years)</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Battery</th>
+          <th rowspan="2">Capacity</th>
+          <th rowspan="2">Installed Cost</th>
+          <th colspan="2" style="text-align:center;background:#555">Default strategy<br><small style="font-weight:normal">charge≤10.0p / discharge≥20.0p</small></th>
+          <th colspan="3" style="text-align:center;background:#0077aa">Optimised strategy 🎯</th>
+          <th rowspan="2">Saving uplift</th>
+          <th rowspan="2">15yr Net Profit</th>
+          <th rowspan="2">IRR</th>
+        </tr>
+        <tr>
+          <th style="background:#666">Year-1 saving</th><th style="background:#666">Payback</th>
+          <th style="background:#0088bb">Best thresholds</th>
+          <th style="background:#0088bb">Year-1 saving</th>
+          <th style="background:#0088bb">Payback</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="highlight">
+          <td><strong>GivEnergy 9.5 kWh</strong> ⭐ Best</td>
+          <td>9.5 kWh</td>
+          <td>£5,500</td>
+          <td>£310</td>
+          <td>17.7 yrs</td>
+          <td style="color:#0077cc;font-weight:600">≤10p / ≥15p</td>
+          <td style="color:#0077cc;font-weight:600">£388</td>
+          <td style="color:#0077cc;font-weight:600">14.2 yrs</td>
+          <td style="color:#00aa44;font-weight:600">+£78/yr</td>
+          <td style="color:#009944">£+320</td>
+          <td>1.2%</td>
+        </tr>
+        <tr>
+          <td><strong>Tesla Powerwall 3 (13.5 kWh)</strong></td>
+          <td>13.5 kWh</td>
+          <td>£9,500</td>
+          <td>£355</td>
+          <td>26.8 yrs</td>
+          <td style="color:#0077cc;font-weight:600">≤5p / ≥15p</td>
+          <td style="color:#0077cc;font-weight:600">£432</td>
+          <td style="color:#0077cc;font-weight:600">22.0 yrs</td>
+          <td style="color:#00aa44;font-weight:600">+£77/yr</td>
+          <td>£-3,020</td>
+          <td>-8.1%</td>
+        </tr>
+        <tr>
+          <td><strong>Alpha ESS Storion T10 (10 kWh)</strong></td>
+          <td>10.0 kWh</td>
+          <td>£5,200</td>
+          <td>£295</td>
+          <td>17.6 yrs</td>
+          <td style="color:#0077cc;font-weight:600">≤10p / ≥15p</td>
+          <td style="color:#0077cc;font-weight:600">£372</td>
+          <td style="color:#0077cc;font-weight:600">14.0 yrs</td>
+          <td style="color:#00aa44;font-weight:600">+£77/yr</td>
+          <td style="color:#009944">£+380</td>
+          <td>1.4%</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- SOLAR SECTION -->
+  <p class="section-title">☀️ Solar PV Analysis</p>
+  <div class="tip">
+    <strong>Tip:</strong> Solar significantly improves battery ROI by shifting self-generated daytime energy to evening peak periods via the battery, reducing grid import at expensive Agile rates.
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Solar + Battery — Combined Annual Savings (GivEnergy 9.5 kWh)</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Solar Size</th>
+          <th>Installed Cost</th>
+          <th>Annual Generation</th>
+          <th>Self-consumed</th>
+          <th>Exported (SEG)</th>
+          <th>Solar saving</th>
+          <th>Battery saving</th>
+          <th>Combined saving</th>
+          <th>Combined payback</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>3 kWp</td>
+          <td>£4,800</td>
+          <td>2,580 kWh</td>
+          <td>1,420 kWh</td>
+          <td>1,160 kWh</td>
+          <td>£448</td>
+          <td>£388</td>
+          <td>£836</td>
+          <td>12.3 yrs</td>
+        </tr>
+        <tr class="highlight">
+          <td><strong>4 kWp ⭐</strong></td>
+          <td>£6,400</td>
+          <td>3,440 kWh</td>
+          <td>1,760 kWh</td>
+          <td>1,680 kWh</td>
+          <td>£557</td>
+          <td>£388</td>
+          <td><strong>£945</strong></td>
+          <td><strong>11.9 yrs</strong></td>
+        </tr>
+        <tr>
+          <td>6 kWp</td>
+          <td>£9,600</td>
+          <td>5,160 kWh</td>
+          <td>2,100 kWh</td>
+          <td>3,060 kWh</td>
+          <td>£663</td>
+          <td>£388</td>
+          <td>£1,051</td>
+          <td>17.1 yrs</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <p class="footnote">
+    ⚠ <strong>Example report — synthetic data only.</strong> All figures are illustrative and based on a UK synthetic load profile (3,800 kWh/yr) with representative Agile rate patterns.
+    Run <code>python3 octopus_battery_analysis.py</code> to generate a personalised report from your real Octopus account data.<br><br>
+    Battery costs are UK market estimates (March 2026). Solar yield uses UK average irradiance data (south-facing, 30–40° pitch).
+    SEG export rate assumed at 15p/kWh. All projections assume flat energy prices and usage — actual results will vary.
+    This is not financial advice.
+  </p>
+
+</div>
+
+<script>
+const months = ['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb'];
+const consumption = [248, 192, 168, 145, 152, 138, 155, 178, 285, 342, 398, 399];
+const costs = [52, 38, 31, 26, 28, 25, 29, 34, 58, 72, 90, 92];
+
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [{ label: 'kWh', data: consumption,
+      backgroundColor: 'rgba(232,76,140,0.7)', borderColor: '#e84c8c', borderWidth: 1 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { callback: v => v + ' kWh' } } } }
+});
+
+new Chart(document.getElementById('monthlyCostChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [{ label: '£', data: costs,
+      backgroundColor: 'rgba(0,153,255,0.7)', borderColor: '#0099ff', borderWidth: 1 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { callback: v => '£' + v } } } }
+});
+
+new Chart(document.getElementById('rateDistChart'), {
+  type: 'bar',
+  data: {
+    labels: ['<0p','0–5p','5–10p','10–15p','15–20p','20–25p','25–30p','>30p'],
+    datasets: [{ label: 'kWh', data: [82, 210, 330, 980, 1200, 580, 290, 128],
+      backgroundColor: ['#00cc66','#44dd88','#88ddaa','#ffdd44','#ffaa00','#ff7722','#ee4422','#cc2200'] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { callback: v => v + ' kWh' } } } }
+});
+</script>
+</body>
+</html>

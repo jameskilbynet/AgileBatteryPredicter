@@ -16,6 +16,21 @@ import requests
 import json
 from datetime import datetime, timezone
 
+
+def _load_dotenv():
+    """Load key=value pairs from a .env file into os.environ (if it exists)."""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, value = line.partition("=")
+                os.environ.setdefault(key.strip(), value.strip())
+
+_load_dotenv()
+
 BASE_URL = "https://api.octopus.energy/v1"
 GRAPHQL_URL = "https://api.octopus.energy/v1/graphql/"
 

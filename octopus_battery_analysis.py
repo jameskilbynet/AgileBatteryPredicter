@@ -24,6 +24,21 @@ from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import math
 
+
+def _load_dotenv():
+    """Load key=value pairs from a .env file into os.environ (if it exists)."""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, value = line.partition("=")
+                os.environ.setdefault(key.strip(), value.strip())
+
+_load_dotenv()
+
 # ─────────────────────────────────────────────
 #  CONFIGURATION — edit these if needed
 # ─────────────────────────────────────────────
@@ -1237,62 +1252,68 @@ def generate_html_report(usage_summary, battery_results, intervals, account_numb
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {{
-    --oct-pink: #e84c8c;
-    --oct-dark: #1c1c1c;
-    --oct-light: #f8f8f8;
-    --oct-green: #00cc66;
+    --oct-bg: #100030;
+    --oct-card: #180048;
+    --oct-pink: #f050f8;
+    --oct-cyan: #60f0f8;
+    --oct-purple: #5840ff;
+    --oct-text: #f0ffff;
+    --oct-muted: rgba(240,255,255,0.55);
+    --oct-green: #00dc64;
     --oct-amber: #ffaa00;
-    --oct-blue: #0099ff;
-    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --oct-border: rgba(255,255,255,0.08);
+    --shadow: 0 2px 16px rgba(0,0,0,0.4);
   }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: var(--oct-light); color: var(--oct-dark); line-height: 1.6; }}
-  .header {{ background: linear-gradient(135deg, var(--oct-pink) 0%, #c0186e 100%);
-             color: white; padding: 40px 40px 30px; }}
-  .header h1 {{ font-size: 2rem; margin-bottom: 6px; }}
-  .header p {{ opacity: 0.85; font-size: 0.95rem; }}
+          background: var(--oct-bg); color: var(--oct-text); line-height: 1.6; }}
+  .header {{ background: linear-gradient(135deg, #2a0060 0%, #100030 100%);
+             border-bottom: 3px solid var(--oct-pink);
+             color: var(--oct-text); padding: 40px 40px 30px; }}
+  .header h1 {{ font-size: 2rem; margin-bottom: 6px; color: var(--oct-cyan); }}
+  .header p {{ opacity: 0.8; font-size: 0.95rem; }}
   .meta {{ display: flex; gap: 30px; margin-top: 18px; flex-wrap: wrap; }}
-  .meta-item {{ background: rgba(255,255,255,0.15); border-radius: 8px;
-                padding: 8px 16px; font-size: 0.85rem; }}
-  .meta-item strong {{ display: block; font-size: 1.1rem; }}
+  .meta-item {{ background: rgba(255,255,255,0.08); border-radius: 8px;
+                padding: 8px 16px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.1); }}
+  .meta-item strong {{ display: block; font-size: 1.1rem; color: var(--oct-cyan); }}
   .container {{ max-width: 1200px; margin: 0 auto; padding: 30px 20px; }}
   .grid-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
   .grid-3 {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }}
-  .card {{ background: white; border-radius: 12px; padding: 24px;
-           box-shadow: var(--shadow); }}
-  .card h2 {{ font-size: 1.1rem; color: var(--oct-pink); margin-bottom: 16px;
-              border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }}
+  .card {{ background: var(--oct-card); border-radius: 12px; padding: 24px;
+           box-shadow: var(--shadow); border: 1px solid var(--oct-border); }}
+  .card h2 {{ font-size: 1.1rem; color: var(--oct-cyan); margin-bottom: 16px;
+              border-bottom: 1px solid var(--oct-border); padding-bottom: 10px; }}
   .stat-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }}
-  .stat {{ text-align: center; padding: 16px 10px; background: var(--oct-light);
+  .stat {{ text-align: center; padding: 16px 10px; background: rgba(255,255,255,0.05);
            border-radius: 10px; }}
   .stat .value {{ font-size: 1.8rem; font-weight: 700; color: var(--oct-pink); }}
-  .stat .label {{ font-size: 0.78rem; color: #666; margin-top: 4px; }}
+  .stat .label {{ font-size: 0.78rem; color: var(--oct-muted); margin-top: 4px; }}
   table {{ width: 100%; border-collapse: collapse; font-size: 0.85rem; }}
-  th {{ background: var(--oct-pink); color: white; padding: 10px 12px; text-align: left; }}
-  td {{ padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }}
+  th {{ background: var(--oct-purple); color: var(--oct-text); padding: 10px 12px; text-align: left; }}
+  td {{ padding: 9px 12px; border-bottom: 1px solid var(--oct-border); color: var(--oct-text); }}
   tr:last-child td {{ border-bottom: none; }}
-  tr.highlight {{ background: #fff8f0; }}
+  tr.highlight {{ background: rgba(88,64,255,0.18); }}
   tr.highlight td {{ font-weight: 500; }}
   .chart-container {{ position: relative; height: 280px; }}
-  .rec-good {{ background: #e8faf0; border-left: 4px solid var(--oct-green);
+  .rec-good {{ background: rgba(0,220,100,0.1); border-left: 4px solid var(--oct-green);
                padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }}
-  .rec-ok {{ background: #fff9e8; border-left: 4px solid var(--oct-amber);
+  .rec-ok {{ background: rgba(255,170,0,0.1); border-left: 4px solid var(--oct-amber);
              padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }}
-  .rec-caution {{ background: #fff3e0; border-left: 4px solid #ff7722;
+  .rec-caution {{ background: rgba(255,119,34,0.1); border-left: 4px solid #ff7722;
                   padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }}
-  .rec-bad {{ background: #feeee8; border-left: 4px solid #e84c4c;
+  .rec-bad {{ background: rgba(232,76,76,0.1); border-left: 4px solid #e84c4c;
               padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; }}
   .badge {{ display: inline-block; padding: 2px 8px; border-radius: 12px;
             font-size: 0.75rem; font-weight: 600; }}
-  .badge-green {{ background: #e8faf0; color: #009944; }}
-  .badge-amber {{ background: #fff9e8; color: #996600; }}
-  .badge-red {{ background: #feeee8; color: #cc2200; }}
+  .badge-green {{ background: rgba(0,220,100,0.2); color: #44ee88; }}
+  .badge-amber {{ background: rgba(255,170,0,0.2); color: #ffcc44; }}
+  .badge-red {{ background: rgba(232,76,76,0.2); color: #ff8888; }}
   .section-title {{ font-size: 1.35rem; font-weight: 700; margin: 28px 0 14px;
-                    color: var(--oct-dark); }}
-  .footnote {{ color: #888; font-size: 0.8rem; margin-top: 30px; line-height: 1.5; }}
-  .tip {{ background: #eef6ff; border-radius: 10px; padding: 16px 20px; margin: 12px 0; font-size: 0.9rem; }}
-  .tip strong {{ color: var(--oct-blue); }}
+                    color: var(--oct-cyan); }}
+  .footnote {{ color: var(--oct-muted); font-size: 0.8rem; margin-top: 30px; line-height: 1.5; }}
+  .tip {{ background: rgba(88,64,255,0.15); border: 1px solid rgba(88,64,255,0.3);
+          border-radius: 10px; padding: 16px 20px; margin: 12px 0; font-size: 0.9rem; }}
+  .tip strong {{ color: var(--oct-cyan); }}
   @media (max-width: 768px) {{
     .grid-2, .grid-3 {{ grid-template-columns: 1fr; }}
     .header h1 {{ font-size: 1.5rem; }}

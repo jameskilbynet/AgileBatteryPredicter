@@ -13,8 +13,9 @@ build/
 .venv/
 venv/
 
-# Generated output
-*.html
+# Generated output (exclude real report, keep example)
+octopus_battery_report.html
+!example_report.html
 
 # macOS
 .DS_Store

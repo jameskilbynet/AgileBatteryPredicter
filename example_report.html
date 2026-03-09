@@ -119,15 +119,19 @@
         <div class="label">Peak rate (p/kWh)</div>
       </div>
       <div class="stat">
-        <div class="value" style="color:#00cc66">118</div>
+        <div class="value" style="color:var(--oct-green)">118</div>
         <div class="label">Hours at negative rates</div>
       </div>
-      <div class="stat" style="background:#e8faf0;border:2px solid #00cc66">
-        <div class="value" style="color:#00aa44">£1.94</div>
+      <div class="stat" style="background:rgba(0,220,100,0.1);border:2px solid var(--oct-green)">
+        <div class="value" style="color:var(--oct-green)">£1.94</div>
         <div class="label">Earned at negative rates</div>
       </div>
+      <div class="stat" style="background:rgba(96,240,248,0.08);border:2px solid var(--oct-cyan)">
+        <div class="value" style="color:var(--oct-cyan)">18</div>
+        <div class="label">Hours at 0p (free)</div>
+      </div>
       <div class="stat">
-        <div class="value" style="color:#00cc66">-9.1p</div>
+        <div class="value" style="color:var(--oct-green)">-9.1p</div>
         <div class="label">Lowest rate seen</div>
       </div>
     </div>
@@ -156,7 +160,7 @@
       <canvas id="rateDistChart"></canvas>
     </div>
     <div style="margin-top:14px; display:flex; gap:20px; font-size:0.85rem; flex-wrap:wrap">
-      <span>⚡ <strong style="color:#00cc66">82 kWh</strong> consumed at &lt;0p</span>
+      <span>⚡ <strong style="color:var(--oct-green)">82 kWh</strong> consumed at &lt;0p</span>
       <span>🟢 <strong>540 kWh</strong> consumed at 0–10p (cheap)</span>
       <span>🟡 <strong>2,180 kWh</strong> consumed at 10–20p (medium)</span>
       <span>🔴 <strong>998 kWh</strong> consumed at &gt;20p (expensive)</span>
@@ -176,17 +180,17 @@
           <th rowspan="2">Battery</th>
           <th rowspan="2">Capacity</th>
           <th rowspan="2">Installed Cost</th>
-          <th colspan="2" style="text-align:center;background:#555">Default strategy<br><small style="font-weight:normal">charge≤10.0p / discharge≥20.0p</small></th>
-          <th colspan="3" style="text-align:center;background:#0077aa">Optimised strategy 🎯</th>
+          <th colspan="2" style="text-align:center;background:rgba(255,255,255,0.12)">Default strategy<br><small style="font-weight:normal">charge≤10.0p / discharge≥20.0p</small></th>
+          <th colspan="3" style="text-align:center;background:rgba(96,240,248,0.22)">Optimised strategy 🎯</th>
           <th rowspan="2">Saving uplift</th>
           <th rowspan="2">15yr Net Profit</th>
           <th rowspan="2">IRR</th>
         </tr>
         <tr>
-          <th style="background:#666">Year-1 saving</th><th style="background:#666">Payback</th>
-          <th style="background:#0088bb">Best thresholds</th>
-          <th style="background:#0088bb">Year-1 saving</th>
-          <th style="background:#0088bb">Payback</th>
+          <th style="background:rgba(255,255,255,0.12)">Year-1 saving</th><th style="background:rgba(255,255,255,0.12)">Payback</th>
+          <th style="background:rgba(96,240,248,0.22)">Best thresholds</th>
+          <th style="background:rgba(96,240,248,0.22)">Year-1 saving</th>
+          <th style="background:rgba(96,240,248,0.22)">Payback</th>
         </tr>
       </thead>
       <tbody>
@@ -196,11 +200,11 @@
           <td>£5,500</td>
           <td>£310</td>
           <td>17.7 yrs</td>
-          <td style="color:#0077cc;font-weight:600">≤10p / ≥15p</td>
-          <td style="color:#0077cc;font-weight:600">£388</td>
-          <td style="color:#0077cc;font-weight:600">14.2 yrs</td>
-          <td style="color:#00aa44;font-weight:600">+£78/yr</td>
-          <td style="color:#009944">£+320</td>
+          <td style="color:var(--oct-cyan);font-weight:600">≤10p / ≥15p</td>
+          <td style="color:var(--oct-cyan);font-weight:600">£388</td>
+          <td style="color:var(--oct-cyan);font-weight:600">14.2 yrs</td>
+          <td style="color:var(--oct-green);font-weight:600">+£78/yr</td>
+          <td style="color:var(--oct-green)">£+320</td>
           <td>1.2%</td>
         </tr>
         <tr>
@@ -209,10 +213,10 @@
           <td>£9,500</td>
           <td>£355</td>
           <td>26.8 yrs</td>
-          <td style="color:#0077cc;font-weight:600">≤5p / ≥15p</td>
-          <td style="color:#0077cc;font-weight:600">£432</td>
-          <td style="color:#0077cc;font-weight:600">22.0 yrs</td>
-          <td style="color:#00aa44;font-weight:600">+£77/yr</td>
+          <td style="color:var(--oct-cyan);font-weight:600">≤5p / ≥15p</td>
+          <td style="color:var(--oct-cyan);font-weight:600">£432</td>
+          <td style="color:var(--oct-cyan);font-weight:600">22.0 yrs</td>
+          <td style="color:var(--oct-green);font-weight:600">+£77/yr</td>
           <td>£-3,020</td>
           <td>-8.1%</td>
         </tr>
@@ -222,11 +226,11 @@
           <td>£5,200</td>
           <td>£295</td>
           <td>17.6 yrs</td>
-          <td style="color:#0077cc;font-weight:600">≤10p / ≥15p</td>
-          <td style="color:#0077cc;font-weight:600">£372</td>
-          <td style="color:#0077cc;font-weight:600">14.0 yrs</td>
-          <td style="color:#00aa44;font-weight:600">+£77/yr</td>
-          <td style="color:#009944">£+380</td>
+          <td style="color:var(--oct-cyan);font-weight:600">≤10p / ≥15p</td>
+          <td style="color:var(--oct-cyan);font-weight:600">£372</td>
+          <td style="color:var(--oct-cyan);font-weight:600">14.0 yrs</td>
+          <td style="color:var(--oct-green);font-weight:600">+£77/yr</td>
+          <td style="color:var(--oct-green)">£+380</td>
           <td>1.4%</td>
         </tr>
       </tbody>

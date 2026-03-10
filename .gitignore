@@ -12,6 +12,7 @@ dist/
 build/
 .venv/
 venv/
+*.spec
 
 # Generated output (exclude real report, keep example)
 octopus_battery_report.html

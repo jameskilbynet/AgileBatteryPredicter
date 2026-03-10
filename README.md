@@ -93,7 +93,8 @@ Battery models (capacity, cost, efficiency, warranty) are defined in the `BATTER
 |---|---|
 | Usage Summary | Total kWh, daily average, spend, peak/negative rates |
 | Monthly charts | Consumption (kWh) and cost (£) by month |
-| Rate distribution | kWh consumed by Agile rate band |
+| Rate distribution | kWh consumed by Agile rate band (chart) |
+| Price band breakdown | Detailed table of kWh, % of total, and estimated cost per 5p band with category subtotals |
 | Battery Recommendation | Default vs optimised strategy, payback, 15yr net profit, IRR |
 | Solar Analysis | PV yield, self-consumption, export earnings, combined ROI |
 

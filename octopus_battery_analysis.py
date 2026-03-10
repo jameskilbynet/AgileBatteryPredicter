@@ -1192,6 +1192,117 @@ def generate_html_report(usage_summary, battery_results, intervals, account_numb
     rate_values = [round(rate_buckets[k], 2) for k in rate_labels]
     rate_labels_str = [f"{k}p–{k+5}p" for k in rate_labels]
 
+    # Price band table rows
+    total_kwh = usage_summary.get("total_kwh", 1) or 1
+    band_subtotals = {"negative": (0.0, 0.0), "cheap": (0.0, 0.0),
+                      "medium": (0.0, 0.0), "expensive": (0.0, 0.0)}
+    band_table_rows = ""
+    prev_category = None
+    for label, label_str, kwh in zip(rate_labels, rate_labels_str, rate_values):
+        midpoint = label + 2.5  # midpoint of 5p-wide band
+        est_cost = kwh * midpoint / 100  # £
+        pct = kwh / total_kwh * 100
+        if label < 0:
+            category, badge = "negative", '<span class="badge badge-green">Negative</span>'
+            cost_color = "color:#00aa44"
+            cost_str = f"−£{abs(est_cost):.2f}"
+            bk = "negative"
+        elif label < 10:
+            category, badge = "cheap", '<span class="badge badge-green">Cheap</span>'
+            cost_color = ""
+            cost_str = f"£{est_cost:.2f}"
+            bk = "cheap"
+        elif label < 20:
+            category, badge = "medium", '<span class="badge badge-amber">Medium</span>'
+            cost_color = ""
+            cost_str = f"£{est_cost:.2f}"
+            bk = "medium"
+        else:
+            category, badge = "expensive", '<span class="badge badge-red">Expensive</span>'
+            cost_color = ""
+            cost_str = f"£{est_cost:.2f}"
+            bk = "expensive"
+        sub_kwh, sub_cost = band_subtotals[bk]
+        band_subtotals[bk] = (sub_kwh + kwh, sub_cost + est_cost)
+
+        if category != prev_category and prev_category is not None:
+            # Insert subtotal row for previous category
+            pk = {"negative": "negative", "cheap": "cheap", "medium": "medium", "expensive": "expensive"}[prev_category]
+            sub_k, sub_c = band_subtotals[pk]
+            # adjust: we added current row already, so sub includes current — recompute prev only
+            # Actually band_subtotals is incremented each iter, so we need to store before increment
+            pass  # handled below after loop
+        prev_category = category
+
+        cost_td = f'<td style="{cost_color}">{cost_str}</td>' if cost_color else f"<td>{cost_str}</td>"
+        band_table_rows += (
+            f"<tr><td>{label_str}</td><td>{kwh:,.1f} kWh</td>"
+            f"<td>{pct:.1f}%</td>{cost_td}<td>{badge}</td></tr>\n        "
+        )
+
+    # rebuild with subtotals inserted between category groups
+    band_table_rows = ""
+    prev_category = None
+    category_rows: dict = {}
+    for label, label_str, kwh in zip(rate_labels, rate_labels_str, rate_values):
+        midpoint = label + 2.5
+        est_cost = kwh * midpoint / 100
+        pct = kwh / total_kwh * 100
+        if label < 0:
+            category, badge = "negative", '<span class="badge badge-green">Negative</span>'
+            cost_str = f"−£{abs(est_cost):.2f}"
+            cost_style = ' style="color:#00aa44"'
+        elif label < 10:
+            category, badge = "cheap", '<span class="badge badge-green">Cheap</span>'
+            cost_str = f"£{est_cost:.2f}"
+            cost_style = ""
+        elif label < 20:
+            category, badge = "medium", '<span class="badge badge-amber">Medium</span>'
+            cost_str = f"£{est_cost:.2f}"
+            cost_style = ""
+        else:
+            category, badge = "expensive", '<span class="badge badge-red">Expensive</span>'
+            cost_str = f"£{est_cost:.2f}"
+            cost_style = ""
+        if category not in category_rows:
+            category_rows[category] = {"rows": "", "kwh": 0.0, "cost": 0.0}
+        category_rows[category]["kwh"] += kwh
+        category_rows[category]["cost"] += est_cost
+        category_rows[category]["rows"] += (
+            f"<tr><td>{label_str}</td><td>{kwh:,.1f} kWh</td>"
+            f"<td>{pct:.1f}%</td><td{cost_style}>{cost_str}</td><td>{badge}</td></tr>\n        "
+        )
+
+    subtotal_labels = {
+        "negative": "&lt;0p (Negative)", "cheap": "0–10p (Cheap)",
+        "medium": "10–20p (Medium)", "expensive": "&gt;20p (Expensive)"
+    }
+    subtotal_cost_style = {"negative": ' style="color:#00aa44"', "cheap": "", "medium": "", "expensive": ""}
+    for cat in ["negative", "cheap", "medium", "expensive"]:
+        if cat not in category_rows:
+            continue
+        info = category_rows[cat]
+        band_table_rows += info["rows"]
+        sub_pct = info["kwh"] / total_kwh * 100
+        is_neg = cat == "negative"
+        cost_disp = f"−£{abs(info['cost']):.2f}" if is_neg else f"£{info['cost']:.2f}"
+        band_table_rows += (
+            f'<tr class="highlight"><td><strong>Subtotal: {subtotal_labels[cat]}</strong></td>'
+            f'<td><strong>{info["kwh"]:,.1f} kWh</strong></td>'
+            f'<td><strong>{sub_pct:.1f}%</strong></td>'
+            f'<td{subtotal_cost_style[cat]}><strong>{cost_disp}</strong></td>'
+            f'<td></td></tr>\n        '
+        )
+    grand_cost = sum(v["cost"] for v in category_rows.values())
+    band_table_rows += (
+        f'<tr style="background:rgba(88,64,255,0.3)">'
+        f'<td><strong>Total</strong></td>'
+        f'<td><strong>{total_kwh:,.0f} kWh</strong></td>'
+        f'<td><strong>100%</strong></td>'
+        f'<td><strong>£{grand_cost:,.0f}</strong></td>'
+        f'<td></td></tr>'
+    )
+
     # TCO chart data for best battery
     best = min(battery_results, key=lambda x: x["tco"]["payback_years"] or 999)
     tco_years = [str(y["year"]) for y in best["tco"]["year_by_year"]]
@@ -1405,6 +1516,30 @@ def generate_html_report(usage_summary, battery_results, intervals, account_numb
       <span>🟡 <strong>{us.get('medium_kwh',0):,.0f} kWh</strong> consumed at 10–20p (medium)</span>
       <span>🔴 <strong>{us.get('expensive_kwh',0):,.0f} kWh</strong> consumed at &gt;20p (expensive)</span>
     </div>
+  </div>
+
+  <!-- CONSUMPTION BY PRICE BAND TABLE -->
+  <div class="card" style="margin-top:20px">
+    <h2>📋 Consumption Breakdown by Price Band</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Price Band</th>
+          <th>kWh Consumed</th>
+          <th>% of Total</th>
+          <th>Est. Cost</th>
+          <th>Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        {band_table_rows}
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size:0.8rem;color:var(--oct-muted);margin-top:10px">
+      Est. cost uses the midpoint of each 5p band. Slight variance from reported total due to midpoint estimation. Negative cost = Octopus credits you.
+    </p>
   </div>
 
   <!-- BATTERY RECOMMENDATION -->

@@ -14,7 +14,7 @@ Connects to the Octopus Energy API, pulls your **Agile Octopus** half-hourly con
 - Solar (PV) + battery combined analysis across 3kWp, 4kWp, and 6kWp system sizes
 - Smart Export Guarantee (SEG) export earnings included
 - Fully self-contained HTML report with Chart.js charts — no server required
-
+[View raw](octopus_bttery_report.html)
 ---
 
 ## Requirements

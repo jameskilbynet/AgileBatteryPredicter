@@ -101,6 +101,12 @@ See the **[live example report](https://jameskilbynet.github.io/AgileBatteryPred
 
 ---
 
+## Background
+
+This tool was written to accompany the blog post **[Octopus Agile: Battery & Solar Calculator](https://jameskilby.co.uk/2026/03/octopus-agile-battery-solar-calculator/)**, which explains the methodology and walks through a real-world example.
+
+---
+
 ## Notes
 
 - **SMETS1 meters** often have a 24–48 hour data lag. If consumption data is unavailable the tool falls back to a synthetic UK load profile (3,100 kWh/year) and flags this clearly in the report.

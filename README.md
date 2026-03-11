@@ -51,6 +51,9 @@ Python 3.8 or later. No other dependencies.
 python3 octopus_battery_analysis.py
 # or pass the key directly:
 python3 octopus_battery_analysis.py --api-key sk_live_...
+# or export data to csv
+python3 octopus_battery_analysis.py --csv my_energy_data.csv
+
 ```
 
 Opens/creates `octopus_battery_report.html` — open it in any browser.

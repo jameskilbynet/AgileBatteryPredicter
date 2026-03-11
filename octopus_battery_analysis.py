@@ -16,6 +16,7 @@ Date: March 2026
 """
 
 import argparse
+import csv
 import requests
 import json
 import sys
@@ -2122,6 +2123,15 @@ def main():
         default=os.environ.get("OCTOPUS_API_KEY"),
         help="Octopus Energy API key (or set OCTOPUS_API_KEY env var)",
     )
+    parser.add_argument(
+        "--csv",
+        metavar="FILE",
+        nargs="?",
+        const="agile_data.csv",
+        default=None,
+        help="Dump Agile pricing and usage data to a CSV file "
+             "(default filename: agile_data.csv)",
+    )
     args = parser.parse_args()
 
     if not args.api_key:
@@ -2266,6 +2276,25 @@ def main():
     print(f"  Negative rate hrs:  {usage_summary['negative_rate_hours']:.0f} hours")
     print(f"  Negative rate kWh:  {usage_summary['negative_rate_kwh']:.1f} kWh")
     print(f"  Earned at neg rates:£{usage_summary['negative_earnings_gbp']:.2f}")
+
+    # Optional CSV export
+    if args.csv:
+        csv_path = args.csv
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "period_utc", "consumption_kwh", "agile_rate_p_per_kwh",
+                "cost_p", "cost_gbp",
+            ])
+            for iv in intervals:
+                writer.writerow([
+                    iv["period"],
+                    round(iv["kwh"], 6),
+                    round(iv["rate_p"], 4),
+                    round(iv["cost_p"], 4),
+                    round(iv["cost_p"] / 100, 6),
+                ])
+        print(f"\n  ✓ CSV saved to: {csv_path} ({len(intervals):,} rows)")
 
     # 6. Model battery savings — current usage AND doubled-usage scenario
     print("\n[6/6] Modelling battery savings & calculating TCO...")

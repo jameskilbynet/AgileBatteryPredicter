@@ -178,7 +178,11 @@ def get_account_number(token):
 def get_account_details_rest(account_number):
     """
     Fetch full account details (meters, tariffs) via the REST API.
-    Returns (mpan, serial_number, tariff_code).
+
+    If multiple active import meters are found, prompt the user to choose one.
+
+    Returns:
+        (mpan, serial_number, tariff_code)
     """
     url = f"{BASE_URL}/accounts/{account_number}/"
     resp = requests.get(url, auth=(API_KEY, ""), timeout=30)
@@ -188,54 +192,104 @@ def get_account_details_rest(account_number):
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    available_meters = []
+
     # Walk properties → electricity_meter_points → meters / agreements
     # Skip any property the customer has already moved out of
     for prop in data.get("properties", []):
         moved_out = prop.get("moved_out_at")
         if moved_out:
-            # Normalise: strip timezone suffix for a basic string comparison
-            moved_out_clean = moved_out[:19].replace("T", "T")
+            moved_out_clean = moved_out[:19]
             if moved_out_clean < now_str[:19]:
                 addr = prop.get("address_line_1", "unknown")
                 print(f"  → Skipping old property: {addr} (moved out {moved_out[:10]})")
                 continue
+
+        address = ", ".join(
+            str(x) for x in [
+                prop.get("address_line_1"),
+                prop.get("address_line_2"),
+                prop.get("address_line_3"),
+                prop.get("postcode"),
+            ]
+            if x
+        ) or "Unknown address"
+
         for emp in prop.get("electricity_meter_points", []):
             mpan = emp.get("mpan")
-            # Skip export meters
-            meters = [m for m in emp.get("meters", []) if not m.get("is_export", False)]
-            if not meters:
+            if not mpan:
                 continue
-            serial = meters[0].get("serial_number")
 
-            # Find the most recent agreement whose valid_from is in the past.
-            # Some accounts have all agreements with a valid_to date (even active ones).
-            # Strategy: take agreement with latest valid_from that is <= now.
+            # Find the most recent agreement whose valid_from is in the past
             tariff_code = None
             agreements = emp.get("agreements", [])
-            # Sort by valid_from descending; pick the first one that has started
             valid_started = [
                 ag for ag in agreements
                 if ag.get("valid_from", "9999") <= now_str
             ]
             if valid_started:
-                latest = sorted(valid_started,
-                                key=lambda a: a.get("valid_from", ""), reverse=True)[0]
+                latest = sorted(
+                    valid_started,
+                    key=lambda a: a.get("valid_from", ""),
+                    reverse=True
+                )[0]
                 tariff_code = latest.get("tariff_code")
 
-            # If still None, just take the most recent one regardless
             if tariff_code is None and agreements:
-                latest = sorted(agreements,
-                                key=lambda a: a.get("valid_from", ""), reverse=True)[0]
+                latest = sorted(
+                    agreements,
+                    key=lambda a: a.get("valid_from", ""),
+                    reverse=True
+                )[0]
                 tariff_code = latest.get("tariff_code")
 
-            if mpan and serial:
-                return mpan, serial, tariff_code
+            # Skip export meters, keep all usable import meters
+            for meter in emp.get("meters", []):
+                if meter.get("is_export", False):
+                    continue
 
-    raise RuntimeError(
-        "Could not find an electricity meter point in your account. "
-        "Check the account has an active electricity meter."
-    )
+                serial = meter.get("serial_number")
+                if not serial:
+                    continue
 
+                available_meters.append({
+                    "address": address,
+                    "mpan": mpan,
+                    "serial": serial,
+                    "tariff_code": tariff_code,
+                })
+
+    if not available_meters:
+        raise RuntimeError(
+            "Could not find an active import electricity meter in your account."
+        )
+
+    if len(available_meters) == 1:
+        chosen = available_meters[0]
+        print("  → Found 1 active import meter, selecting it automatically.")
+        return chosen["mpan"], chosen["serial"], chosen["tariff_code"]
+
+    print("\n  Available import meters:")
+    for idx, meter in enumerate(available_meters, start=1):
+        print(
+            f"    [{idx}] Serial: {meter['serial']} | "
+            f"MPAN: {meter['mpan']} | "
+            f"Address: {meter['address']} | "
+            f"Tariff: {meter['tariff_code'] or 'Unknown'}"
+        )
+
+    while True:
+        choice = input(f"\nSelect a meter to use [1 to {len(available_meters)}]: ").strip()
+        try:
+            choice_num = int(choice)
+            if 1 <= choice_num <= len(available_meters):
+                chosen = available_meters[choice_num - 1]
+                print(f"  → Using serial {chosen['serial']}")
+                return chosen["mpan"], chosen["serial"], chosen["tariff_code"]
+        except ValueError:
+            pass
+
+        print("  Invalid selection, please enter a valid number.")
 
 def fmt_dt(dt):
     """Format a datetime as a plain ISO 8601 string without microseconds."""
